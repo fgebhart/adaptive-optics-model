@@ -3,7 +3,7 @@
 
 This repository contains all files of the 'Adaptive Optics Model'. This includes the python code, the 3D-models and the images used for GUI. Manufacturing the AO Model is part of my university final thesis. The manufacturing is now complete and the project can be examined at the 'Haus der Astronomy - Center of Astronomy Education and Outreach' in Heidelberg Germany.
 
-http://www.haus-der-astronomie.de/en
+http://www.haus-der-astronomie.de/de/bildungsmaterial/ao-modell
 
 
 ### Content

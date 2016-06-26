@@ -22,9 +22,13 @@ rawCapture = PiRGBArray(camera, size=(256, 256))
 def get_laser_points(image):
     """Return centers of laser-points found in the given image
     as list of coordinate-tuples."""
-    # The color boarders for red laser (appears white on screen)
-    whiteLower = (190, 190, 190)
+    # The color boundaries for red laser (appears white on screen)
+    # boundaries are in GBR: green, blue, red
+    whiteLower = (150, 150, 180)
     whiteUpper = (255, 255, 255)
+    # these boundaries should work fine for even bright rooms
+    # rooms with dimmed light should apply new lower
+    # boundaries: (190, 190, 190)
     # get the contour areas for the steppers
     mask = cv2.inRange(image, whiteLower, whiteUpper)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
@@ -42,6 +46,7 @@ def get_laser_points(image):
             # from left to right, sorting
             # first tuple value (x coordinate) ascending
             centroids = sorted(centroids)
+            centroids = centroids[:5]
 
     return centroids
 
@@ -127,9 +132,9 @@ while True:
     end = time.time()
     draw_fps(image, start, end)
     # show the frame
-    cv2.imshow("Kamera Bild", image)
+    cv2.imshow("Sicht der Kamera", image)
     # move frame to given position
-    cv2.moveWindow("Kamera Bild", 500, 100)
+    cv2.moveWindow("Sicht der Kamera", 500, 100)
 
     # check if the close.log file exists. If it is deleted break
     if os.path.isfile('/home/pi/close.log') is True:

@@ -16,8 +16,12 @@ import time
 import RPi.GPIO as GPIO
 import os
 
+# make sure the close.log file is existing in order to
+# successfully run this file  - see tk_ao.py
+os.system('sudo touch /home/pi/close.log')
+
 # allow camera to wake up
-time.sleep(2)
+# time.sleep(2)
 
 # enable Pi-Camera and set resolution
 camera = PiCamera()
@@ -88,9 +92,13 @@ stepperPositions = [0, 0, 0, 0, 0]
 def get_laser_points(image):
     """Return centers of laser-points found in the given image
     as list of coordinate-tuples."""
-    # The color boarders for red laser (appears white on screen)
-    whiteLower = (190, 190, 190)
+    # The color boundaries for red laser (appears white on screen)
+    # boundaries are in GBR: green, blue, red
+    whiteLower = (150, 150, 180)
     whiteUpper = (255, 255, 255)
+    # these boundaries should work fine for even bright rooms
+    # rooms with dimmed light should apply new lower
+    # boundaries: (190, 190, 190)
     # get the contour areas for the steppers
     mask = cv2.inRange(image, whiteLower, whiteUpper)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
@@ -108,26 +116,10 @@ def get_laser_points(image):
             # from left to right, sorting
             # first tuple value (x coordinate) ascending
             centroids = sorted(centroids)
+            centroids = centroids[:5]
+
 
     return centroids
-
-
-def draw_reference_points_new(image):
-    """Draw evenly distributed reference points on the given
-    image"""
-    number_of_reference_points = 8
-    reference_point_color = (0, 255, 0)
-    image_width = image.shape[0]
-    image_height = image.shape[1]
-    upper_y = image_height / 2 + 30
-    lower_y = image_height / 2 + 20
-    interval_width = image_width / number_of_reference_points
-    for x in range(interval_width * 2,
-                   image_width - interval_width,
-                   interval_width):
-        cv2.line(image, (x, upper_y), (x, lower_y),
-                 reference_point_color, thickness=1,
-                 lineType=8, shift=0)
 
 
 def move_stepper(stepper, steps_to_perform):
@@ -181,7 +173,7 @@ def log(*args):
     """function to activate the 'print' commands. Just comment
      or uncomment the following lines"""
     pass
-    #print args
+    # print args
 
 
 def find_movement_on_screen(last_laser_points,
@@ -220,8 +212,8 @@ def match_laser_to_stepper(matched_list):
     if last_laser_points is not None:
         if len(last_laser_points) > len(laser_points):
             # if laser left screen, we got to move it even more
-            # (24) backwards to enter screen again
-            move_stepper(current_stepper, (-1) * step_size * 24)
+            # (8) backwards to enter screen again
+            move_stepper(current_stepper, (-1) * step_size * 20)
         else:
             # check out the value of the matched_list and find
             # the relating lasers where value == 0
@@ -230,8 +222,8 @@ def match_laser_to_stepper(matched_list):
                 # -> keep turning the current stepper
                 if find_movement_on_screen(last_laser_points,
                                        laser_points) is None:
-                    move_stepper(current_stepper,
-                                 step_size * 20)
+                        move_stepper(current_stepper,
+                                    step_size * 16)
                 # else: Movement is found, store it in the
                 # matched_list at index "current_stepper"
                 else:
@@ -288,15 +280,16 @@ laser_positions_reached = False
 last_laser_points = None
 matched_list = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
 goal_position = [70, 99, 128, 157, 186]
+# pixel_to_steps_coefficient = 0.55
 pixel_to_steps_coefficient = 0.55
 # good results with 0.9
-gain_factor = 0.8
-# counter for letting it run 10 more images to stabilize
+gain_factor = 0.3
+# counter for letting it run 5 more images to stabilize
 # the lasers
 counter = 0
-# make sure the close.log file is existing in order to
-# successfully run this file  - see tk_ao.py
-os.system('sudo touch /home/pi/close.log')
+# another counter for letting the camera warmup
+# in order to avoid missing the first movement
+warm_up_cocunter = 0
 
 
 # While loop for loading, interpreting and showing frames
@@ -319,9 +312,9 @@ while True:
     # new laser points and stabilizes them)
     if laser_positions_reached is True:
         stabilize_laser(laser_points)
-        # having 10 more frames to stabilize and then
+        # having 5 more frames to stabilize and then
         # end program
-        if counter < 10:
+        if counter < 5:
             counter += 1
         else:
             break
@@ -349,9 +342,7 @@ while True:
     rawCapture.truncate(0)
 
     # check if the close.log file exists. If it is deleted break
-    if os.path.isfile('/home/pi/close.log') is True:
-        pass
-    else:
+    if os.path.isfile('/home/pi/close.log') is False:
         break
 
     # if the `q` key was pressed, break from the loop
@@ -360,3 +351,4 @@ while True:
         break
 
 GPIO.cleanup()
+os.remove('/home/pi/close.log')

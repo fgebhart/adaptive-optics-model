@@ -84,9 +84,13 @@ stepperPositions = [0, 0, 0, 0, 0]
 def get_laser_points(image):
     """Return centers of laser-points found in the given image
     as list of coordinate-tuples."""
-    # The color boarders for red laser (appears white on screen)
-    whiteLower = (190, 190, 190)
+    # The color boundaries for red laser (appears white on screen)
+    # are in GBR: green, blue, red
+    whiteLower = (150, 150, 180)
     whiteUpper = (255, 255, 255)
+    # these boundaries should work fine for even bright rooms
+    # rooms with dimmed light should apply new lower
+    # boundaries: (190, 190, 190)
     # get the contour areas for the steppers
     mask = cv2.inRange(image, whiteLower, whiteUpper)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
@@ -104,6 +108,8 @@ def get_laser_points(image):
             # from left to right(sorting first tuple value
             # x coordinate) ascending
             centroids = sorted(centroids)
+            centroids = centroids[:5]
+
 
     return centroids
 
